@@ -116,7 +116,6 @@ sub irc_ident
 	while( my $input = <$socket> )
 	{
         	chop $input;
-		# Handle any incoming pings while we wait to identify. 
 		# Observed on efnet: Needing to respond to a ping before nick and user are set.
         	if ( $input =~ /^PING(.*)$/i )
         	{   
@@ -138,40 +137,45 @@ sub irc_ident
 	return $self;
 }
 
+sub dispatch_from_sock
+{
+    my ($self, $input) = @_;
+
+    if ( $input =~ /^PING(.*)$/i )
+    {   
+            print { $self->{socket} } "PONG $1\r\n";
+    }
+
+    if ( $input =~ m/:.*\!.*@.*PRIVMSG (#.*):\.*lol/ )
+    {
+        my $channel = $1;
+        $main_dispatch{'lol'}->( $self, $channel );
+    }
+
+    if ( $input =~ m/:.*\!.*@.*PRIVMSG (#.*):\!(.*)$/ )
+    {
+        my $channel = $1;
+        my ($func, @args) = split/\s+/, $2;
+
+        if ( defined $main_dispatch{$func} )
+            {
+                $main_dispatch{$func}->( $self, $channel, @args );
+            }	
+    }
+}
+
 sub sock_read
 {
 	# Read the socket, wait for a command
 	my $self = shift;
-	my $socket = $self->{socket}; # Dunno why but print does not like $self->{socket}
+    my $socket = $self->{socket};
 
 	while ( my $input = <$socket> )
 	{
         chop $input;
-        print "$input\n";
-        if ( $input =~ /^PING(.*)$/i )
-        {   
-                print $socket "PONG $1\r\n";
-        }
-
-        if ( $input =~ m/:.*\!.*@.*PRIVMSG (#.*):\.*lol/ )
-        {
-			my $channel = $1;
-            $main_dispatch{'lol'}->( $self, $channel );
-        }
-
-		if ( $input =~ m/:.*\!.*@.*PRIVMSG (#.*):\!(.*)$/ )
-		{
-			my $channel = $1;
-            my ($func, @args) = split/\s+/, $2;
-
-        if ( defined $main_dispatch{$func} )
-			{
-				$main_dispatch{$func}->( $self, $channel, @args );
-			}	
-		}
+        dispatch_from_sock($self, $input);
 	}
 }
-
 
 sub say_lol
 {
@@ -205,7 +209,6 @@ sub quote_karl
     $rand_num++;
 
 	open my $fh_handle, '<', $karlisms_file;
-
     while( <$fh_handle> )
     {
         if ( $. == $rand_num )
@@ -214,7 +217,6 @@ sub quote_karl
             sock_print($self, $channel, $quote);
         }
     }
-
     close( $fh_handle );
 }
 
@@ -236,7 +238,6 @@ sub insult_new
         	my $insult = $1;
          	sock_print($self, $channel, $insult);
 	}    
-
 }
 
 sub slap
@@ -258,7 +259,6 @@ sub rainbow_say
 {
 
     my ($self, $channel, @args) = @_;
-    my $socket = $self->{socket};
 
     my @colors = qw/4 8 9 10 11 12 13/;
     my $regular = 1;
@@ -293,8 +293,6 @@ sub rainbow_say
 sub find_payday
 {
     my ($self, $channel) = @_;
-    my $socket = $self->{socket};
-
     my $result = `perl ./payday.pl`;
     sock_print($self, $channel, $result);
 }
@@ -303,15 +301,12 @@ sub get_track
 {
 	# Get a track from reddit
 	my ($self, $channel) = @_;
-	my $socket = $self->{socket};
-
     sock_print($self, $channel, Listen::main());
 }
 
 sub sock_print
 {
 	my ($self, $channel, $message) = @_;
-
     print { $self->{socket} } "PRIVMSG  $channel  :$message\r\n";
 }
 1;
