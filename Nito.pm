@@ -313,6 +313,5 @@ sub sock_print
 	my ($self, $channel, $message) = @_;
 
     print { $self->{socket} } "PRIVMSG  $channel  :$message\r\n";
-#    sock_read($self);
 }
 1;
