@@ -11,6 +11,9 @@ use Listen;
 use Exporter qw( import );
 our @EXPORT_OK = qw( :ALL );
 
+our $ua = LWP::UserAgent->new;
+$ua->timeout(10);
+
 our %main_dispatch = 
 (
 	karl    => \&quote_karl,
@@ -101,12 +104,11 @@ sub _get_channels
 sub join_chan 
 {
 	my ($self) = @_;
-	my $socket = $self->{socket};
     my %channels = _get_channels();
    
     foreach my $key (keys %channels)
     {
-        print $socket "JOIN $key $channels{$key}\r\n";
+        print { $self->{socket} } "JOIN $key $channels{$key}\r\n";
     }
 
     return $self;
@@ -188,7 +190,6 @@ sub sock_read
 sub say_lol
 {
 	my ($self, $channel) = @_;
-	my $socket = $self->{socket};
 	my $range = 10;
 
     my $int_rand = int( rand( $range ) );
@@ -208,11 +209,9 @@ sub say_lol
 sub quote_karl
 {
 	my ($self, $channel) = @_;
-	my $socket = $self->{socket};
 	my $karlisms_file = './karlisms';
 	my $range = '20';
 
-	# get a random number between 1 and $range
 	my $rand_num = int( rand( $range ) );
     $rand_num++;
 
@@ -231,17 +230,12 @@ sub quote_karl
 sub insult_new
 {
 	my ($self, $channel) = @_;
-	my $socket = $self->{socket};
-
-	my $ua = LWP::UserAgent->new;
-	$ua->timeout(10);
 
 	my $response = $ua->get('http://www.pangloss.com/seidel/Shaker/index.html');
 	if ($response->is_success) 
 	{
         	my $text = $response->decoded_content;
-        	$text =~ s/\r//g;
-       		$text =~ s/\n//g;
+        	$text =~ s/\r|\n//g;
         	$text =~ m/.*font\ size\=\"\+2\"\>(.*)\<\/font\>/;
         	my $insult = $1;
          	sock_print($self, $channel, $insult);
@@ -251,16 +245,14 @@ sub insult_new
 sub slap
 {
     my ($self, $channel, @args) = @_;
-    my $socket = $self->{socket};
 
     if($args[0] !~ m/[a-zA-Z0-9\-\|]/i || $args[0] eq 'nito' )
     {
-        sock_read($self);
+       return; 
     }
     
-    # Special case due to ACTION command. Might fix sock_print to handle this in the future.
-    print $socket "PRIVMSG $channel :\001ACTION slaps $args[0] around a bit with a large trout.\001\r\n";
-    sock_read($self);
+    my $message = "\001ACTION slaps $args[0] around a bit with a large trout.\001\r\n";
+    sock_print($self, $channel, $message);
 }
 
 sub rainbow_say
@@ -269,7 +261,7 @@ sub rainbow_say
     my ($self, $channel, @args) = @_;
 
     my @colors = qw/4 8 9 10 11 12 13/;
-    my $regular = 1;
+    my $bg_color = 1;
     my $output;
     my $string;
 
@@ -280,7 +272,7 @@ sub rainbow_say
     {
         shift @args;
         $string = join(' ', @args) || "Don't be a dick, be a dude.";
-        $regular = 14;
+        $bg_color = 14;
     }else
     {
         $string = join(' ', @args);
@@ -291,7 +283,7 @@ sub rainbow_say
     foreach my $i (0..$#letters)
     {
         my $ci = $i % @colors;
-        $output .= "\x03$colors[$ci],$regular$letters[$i]"; 
+        $output .= "\x03$colors[$ci],$bg_color$letters[$i]"; 
     }
 
     $output .= "\x03";
