@@ -19,6 +19,7 @@ our %main_dispatch =
 	lol     => \&say_lol,
     payday  => \&find_payday,
     slap    => \&slap,
+    say     => \&rainbow_say,
 );
 
 
@@ -261,8 +262,44 @@ sub slap
         sock_read($self);
     }
 
-    print $socket "PRIVMSG $channel :\001ACTION slaps $args[0] around a bit with a large trout.\r\n";
+    print $socket "PRIVMSG $channel :\001ACTION slaps $args[0] around a bit with a large trout.\001\r\n";
     sock_read($self);
+}
+
+sub rainbow_say
+{
+
+    my ($self, $channel, @args) = @_;
+    my $socket = $self->{socket};
+
+    my @colors = qw/4 8 9 10 11 12 13/;
+    my $regular = 1;
+    my $output;
+    my $string;
+
+    if(!@args)
+    {
+        $string = "Don't be a dick, be a dude.";
+    }elsif($args[0] eq 'blink')
+    {
+        shift @args;
+        $string = join(' ', @args) || "Don't be a dick, be a dude.";
+        $regular = 14;
+    }else
+    {
+        $string = join(' ', @args);
+    }
+
+    my @letters = split//, $string;
+
+    foreach my $i (0..$#letters)
+    {
+        my $ci = $i % @colors;
+        $output .= "\x03$colors[$ci],$regular$letters[$i]"; 
+    }
+
+    $output .= "\x03";
+    print $socket "PRIVMSG $channel :$output\r\n";
 }
 
 sub find_payday

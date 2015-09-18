@@ -96,6 +96,6 @@ sub is_today_payday
 
     if($day == 10 || $day ==25)
     {
-        return "Today is payday!";
+        return "\x0313,14Today is payday!\x03";
     }
 }
