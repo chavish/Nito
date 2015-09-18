@@ -17,8 +17,4 @@ my $socket = IO::Socket::INET->new(
 		or die "Can't connect to $opts{server}:$opts{port}! $!.\n";
 
 my $nito = Nito->new( $socket, $opts{nick}, $opts{user} );
-
-$nito->irc_ident();
-print "Identified!\n";
-$nito->join_chan();
-$nito->sock_read();
+$nito->run();

@@ -37,6 +37,15 @@ sub new
 	return $self;
 }
 
+sub run
+{
+    my ($self) = @_;
+
+    irc_ident($self);
+    join_chan($self);
+    sock_read($self);
+}
+
 sub _legal_key
 {
     my ( $key ) = @_;
@@ -98,7 +107,6 @@ sub join_chan
     foreach my $key (keys %channels)
     {
         print $socket "JOIN $key $channels{$key}\r\n";
-#        print $socket "PRIVMSG $key :The only solution is extinction: http://bit.ly/1VNBka0\r\n";
     }
 
     return $self;
@@ -116,7 +124,7 @@ sub irc_ident
 	while( my $input = <$socket> )
 	{
         	chop $input;
-		# Observed on efnet: Needing to respond to a ping before nick and user are set.
+		    # Observed on efnet: Needing to respond to a ping before nick and user are set.
         	if ( $input =~ /^PING(.*)$/i )
         	{   
                 	print $socket "PONG $1\r\n";
