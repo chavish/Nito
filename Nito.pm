@@ -184,14 +184,13 @@ sub say_lol
 
     if ( $int_rand == 2 || $int_rand == 8 )
 	{
-	    print $socket "PRIVMSG " . $channel . " :" . qq/lol\r\n/;
-	}
-	if ( $int_rand == 7 )
-	{
-	    print $socket "PRIVMSG " . $channel . " :" . qq/blolol\r\n/;
+        sock_print($self, $channel, 'lol');
 	}
 
-    sock_read( $self );
+    if ( $int_rand == 7 )
+	{
+        sock_print($self, $channel, 'blolol');
+	}
 }
 
 sub quote_karl
@@ -202,21 +201,21 @@ sub quote_karl
 	my $range = '20';
 
 	# get a random number between 1 and $range
-	my $rand_quote = int( rand( $range ) );
+	my $rand_num = int( rand( $range ) );
+    $rand_num++;
 
-	open( my $fh_handle, '<', $karlisms_file );
-	while( <$fh_handle> )
-	{
-		if ( $. == $rand_quote )
-		{
-			my $quote = $_;
-			print $socket "PRIVMSG " . $channel . " :" . qq/$_\r\n/;
-		}
-	}
+	open my $fh_handle, '<', $karlisms_file;
 
-	close( $fh_handle );
-	sock_read( $self );
+    while( <$fh_handle> )
+    {
+        if ( $. == $rand_num )
+        {
+            my $quote = $_;
+            sock_print($self, $channel, $quote);
+        }
+    }
 
+    close( $fh_handle );
 }
 
 sub insult_new
@@ -235,10 +234,9 @@ sub insult_new
        		$text =~ s/\n//g;
         	$text =~ m/.*font\ size\=\"\+2\"\>(.*)\<\/font\>/;
         	my $insult = $1;
-         	print $socket "PRIVMSG " . $channel . " :" . qq/$insult\r\n/;       
+         	sock_print($self, $channel, $insult);
 	}    
 
-	sock_read( $self );
 }
 
 sub slap
@@ -246,22 +244,12 @@ sub slap
     my ($self, $channel, @args) = @_;
     my $socket = $self->{socket};
 
-    if($args[0] !~ m/[a-zA-Z0-9\-\|]/i)
+    if($args[0] !~ m/[a-zA-Z0-9\-\|]/i || $args[0] eq 'nito' )
     {
         sock_read($self);
     }
     
-    if($args[0] eq 'chavish')
-    {
-        print $socket "PRIVMSG $channel :\001ACTION [RAUGHS]\r\n";
-        sock_read($self);
-    }
-
-    if($args[0] eq 'nito')
-    {
-        sock_read($self);
-    }
-
+    # Special case due to ACTION command. Might fix sock_print to handle this in the future.
     print $socket "PRIVMSG $channel :\001ACTION slaps $args[0] around a bit with a large trout.\001\r\n";
     sock_read($self);
 }
@@ -299,7 +287,7 @@ sub rainbow_say
     }
 
     $output .= "\x03";
-    print $socket "PRIVMSG $channel :$output\r\n";
+    sock_print($self, $channel, $output);
 }
 
 sub find_payday
@@ -308,7 +296,7 @@ sub find_payday
     my $socket = $self->{socket};
 
     my $result = `perl ./payday.pl`;
-    print $socket "PRIVMSG " . $channel . " :" . qq/$result\r\n/;
+    sock_print($self, $channel, $result);
 }
 
 sub get_track
@@ -317,9 +305,14 @@ sub get_track
 	my ($self, $channel) = @_;
 	my $socket = $self->{socket};
 
-	my $track  = Listen::main();
-        print $socket "PRIVMSG " . $channel . " :" . qq/$track\r\n/;
-	
-	sock_read( $self );
+    sock_print($self, $channel, Listen::main());
+}
+
+sub sock_print
+{
+	my ($self, $channel, $message) = @_;
+
+    print { $self->{socket} } "PRIVMSG  $channel  :$message\r\n";
+#    sock_read($self);
 }
 1;
