@@ -14,6 +14,8 @@ our @EXPORT_OK = qw( :ALL );
 our $ua = LWP::UserAgent->new;
 $ua->timeout(10);
 
+our %opts = load_config();
+
 our %main_dispatch = 
 (
 	karl    => \&quote_karl,
@@ -25,19 +27,29 @@ our %main_dispatch =
     say     => \&rainbow_say,
 );
 
-
 sub new
 {
 	my $class = shift;
 	my $self =
 	{
-		socket => shift,
-		nick => shift,
-		user => shift,
+		socket => shift || _get_a_socket(),
+		nick => shift || 'nito',
+		user => shift || 'gravelord_nito 8 * :Gravelord Nito',
 	};
 
 	bless $self, $class;
 	return $self;
+}
+
+sub _get_a_socket
+{
+    my $socket = IO::Socket::INET->new(
+        PeerAddr => $opts{server},
+        PeerPort => $opts{port},
+        Proto => 'tcp')
+        or die "Can't connect to $opts{server}:$opts{port}! $!.\n";
+
+    return $socket;
 }
 
 sub run
@@ -46,7 +58,7 @@ sub run
 
     irc_ident($self);
     join_chan($self);
-    sock_read($self);
+    read_socket($self);
 }
 
 sub _legal_key
@@ -151,6 +163,8 @@ sub dispatch_from_sock
 {
     my ($self, $input) = @_;
 
+    print "$input\n";
+
     if ( $input =~ /^PING(.*)$/i )
     {   
             print { $self->{socket} } "PONG $1\r\n";
@@ -174,9 +188,8 @@ sub dispatch_from_sock
     }
 }
 
-sub sock_read
+sub read_socket
 {
-	# Read the socket, wait for a command
 	my $self = shift;
     my $socket = $self->{socket};
 
