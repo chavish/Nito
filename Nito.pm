@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 package Nito;
 
 use strict;
@@ -11,7 +12,9 @@ use Listen;
 use Exporter qw( import );
 our @EXPORT_OK = qw( :ALL );
 
-our $ua = LWP::UserAgent->new;
+our $ua = LWP::UserAgent->new(
+    requests_redirectable => [ 'GET', 'HEAD', 'POST' ],
+);
 $ua->timeout(10);
 
 our %opts = load_config();
@@ -25,6 +28,7 @@ our %main_dispatch =
     payday  => \&find_payday,
     slap    => \&slap,
     say     => \&rainbow_say,
+    wiki    => \&get_a_wiki_page,
 );
 
 sub new
@@ -32,9 +36,9 @@ sub new
 	my $class = shift;
 	my $self =
 	{
-		socket => shift || _get_a_socket(),
-		nick => shift || 'nito',
-		user => shift || 'gravelord_nito 8 * :Gravelord Nito',
+		socket  => shift    || _get_a_socket(),
+		nick    => shift    || $opts{nick} || 'nito',
+		user    => shift    || $opts{user} || 'gravelord_nito 8 * :Gravelord Nito',
 	};
 
 	bless $self, $class;
@@ -274,21 +278,18 @@ sub rainbow_say
     my ($self, $channel, @args) = @_;
 
     my @colors = qw/4 8 9 10 11 12 13/;
-    my $bg_color = 1;
+    my $bg_color = '01';
     my $output;
     my $string;
 
-    if(!@args)
-    {
-        $string = "Don't be a dick, be a dude.";
-    }elsif($args[0] eq 'blink')
+    if($args[0] eq 'blink')
     {
         shift @args;
         $string = join(' ', @args) || "Don't be a dick, be a dude.";
         $bg_color = 14;
     }else
     {
-        $string = join(' ', @args);
+        $string = join(' ', @args) || "Don't be a dick, be a dude.";
     }
 
     my @letters = split//, $string;
@@ -315,6 +316,16 @@ sub get_track
 	# Get a track from reddit
 	my ($self, $channel) = @_;
     sock_print($self, $channel, Listen::main());
+}
+
+sub get_a_wiki_page
+{
+	my ($self, $channel) = @_;
+    my $rand_url = 'http://en.wikipedia.org/wiki/Special:Random';
+
+    my $response = $ua->post($rand_url);
+    sock_print($self, $channel, $response->{_previous}->{_headers}->{location});
+
 }
 
 sub sock_print
