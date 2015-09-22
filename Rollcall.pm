@@ -19,6 +19,9 @@ sub main
    }elsif($command eq 'add' && $user)
    {
         add_honkler($user);
+   }elsif($command eq 'remove' && $user)
+   {
+        remove_honkler($user);
    }else
    {
         report_honklers();
@@ -47,6 +50,14 @@ sub add_honkler
         return report_honklers(); 
     }
 
+}
+
+sub remove_honkler
+{
+    my ($user) = @_;
+
+    delete $honklers{$user};
+    return report_honklers();
 }
 
 sub report_honklers
