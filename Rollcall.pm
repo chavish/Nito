@@ -13,7 +13,7 @@ sub main
 {
    my ($command, $user) = @_;
 
-   if(!$command)
+   if(!$command || length $user >= 10)
    {
         report_honklers();
    }elsif($command eq 'add' && $user)
@@ -33,23 +33,30 @@ sub add_honkler
 {
     my ($user) = @_;
 
-    my $epoch_day = '86400'; # Represents number of seconds in one day
-    my $list_age = _check_list_mtime();
-
-	if( -e $rollcall && $list_age <= $epoch_day )
-	{
-        $honklers{$user}++;
-        return report_honklers();
-	}else
+    if( lc($user) eq 'jesus' )
     {
-        # Touch the file and add the user 
-        open my $fh_rollcall, '>', $rollcall or print "Could not open $rollcall: $!\n";
-        close $fh_rollcall;
-        %honklers = {};
-        $honklers{$user}++;
-        return report_honklers(); 
+        return "Jesus is a cunt.";
     }
 
+    if( _valid_user($user) )
+    {
+        my $epoch_day = '86400'; # Represents number of seconds in one day
+        my $list_age = _check_list_mtime();
+
+        if( -e $rollcall && $list_age <= $epoch_day )
+        {
+            $honklers{$user}++;
+            return report_honklers();
+        }else
+        {
+            # Touch the file and add the user 
+            open my $fh_rollcall, '>', $rollcall or print "Could not open $rollcall: $!\n";
+            close $fh_rollcall;
+            %honklers = {};
+            $honklers{$user}++;
+            return report_honklers(); 
+        }
+    }
 }
 
 sub remove_honkler
@@ -70,12 +77,24 @@ sub report_honklers
 
     my $string = "Current honklebros: ";
 
-    foreach my $key (keys %honklers)
+    foreach my $key (sort keys %honklers)
     {
         $string .= "$key ";
     }
 
     return $string;
+}
+
+sub _valid_user
+{
+    my ($user) = @_;
+
+    if($user !~ m/[a-zA-Z0-9\-\|]/i)
+    {
+        return 0;
+    }
+    
+    return 1;
 }
 
 sub _check_list_mtime
