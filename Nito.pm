@@ -8,6 +8,7 @@ use IO::Socket;
 use IO::Socket::INET;
 use LWP::UserAgent;
 use Listen;
+use Rollcall;
 
 use Exporter qw( import );
 our @EXPORT_OK = qw( :ALL );
@@ -29,6 +30,7 @@ our %main_dispatch =
     slap    => \&slap,
     say     => \&rainbow_say,
     wiki    => \&get_a_wiki_page,
+    honkle  => \&roll_call,
 );
 
 sub new
@@ -309,6 +311,12 @@ sub find_payday
     my ($self, $channel) = @_;
     my $result = `perl ./payday.pl`;
     sock_print($self, $channel, $result);
+}
+
+sub roll_call
+{
+	my ($self, $channel, @args) = @_;
+    sock_print( $self, $channel, Rollcall::main(@args) );
 }
 
 sub get_track
