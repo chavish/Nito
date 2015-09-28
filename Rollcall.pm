@@ -13,13 +13,15 @@ sub main
 {
    my ($command, $user) = @_;
 
+    print "$user\n";
+
    if(!$command || length $user >= 10)
    {
         report_honklers();
-   }elsif($command eq 'add' && $user)
+   }elsif($command eq 'add' && _valid_user($user) )
    {
         add_honkler($user);
-   }elsif($command eq 'remove' && $user)
+   }elsif($command eq 'remove' && _valid_user($user) )
    {
         remove_honkler($user);
    }else
@@ -33,29 +35,21 @@ sub add_honkler
 {
     my ($user) = @_;
 
-    if( lc($user) eq 'jesus' )
-    {
-        return "Jesus is a cunt.";
-    }
+    my $epoch_day = '86400'; # Represents number of seconds in one day
+    my $list_age = _check_list_mtime();
 
-    if( _valid_user($user) )
+    if( -e $rollcall && $list_age <= $epoch_day )
     {
-        my $epoch_day = '86400'; # Represents number of seconds in one day
-        my $list_age = _check_list_mtime();
-
-        if( -e $rollcall && $list_age <= $epoch_day )
-        {
-            $honklers{$user}++;
-            return report_honklers();
-        }else
-        {
-            # Touch the file and add the user 
-            open my $fh_rollcall, '>', $rollcall or print "Could not open $rollcall: $!\n";
-            close $fh_rollcall;
-            %honklers = {};
-            $honklers{$user}++;
-            return report_honklers(); 
-        }
+        $honklers{$user}++;
+        return report_honklers();
+    }else
+    {
+        # Touch the file and add the user 
+        open my $fh_rollcall, '>', $rollcall or print "Could not open $rollcall: $!\n";
+        close $fh_rollcall;
+        %honklers = {};
+        $honklers{$user}++;
+        return report_honklers(); 
     }
 }
 
@@ -79,7 +73,7 @@ sub report_honklers
 
     foreach my $key (sort keys %honklers)
     {
-        $string .= "$key ";
+        $string .= $key . ' ';
     }
 
     return $string;
@@ -89,11 +83,11 @@ sub _valid_user
 {
     my ($user) = @_;
 
-    if($user !~ m/[a-zA-Z0-9\-\|]/i)
+    if($user !~ m/^[a-zA-Z0-9\-\|]*$/)#|\-|\|/) # MARK FOR REMOVAL AFTER TESTING!!! 
     {
-        return 0;
+        return undef;
     }
-    
+
     return 1;
 }
 
