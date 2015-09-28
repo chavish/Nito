@@ -13,6 +13,8 @@ use Rollcall;
 use Exporter qw( import );
 our @EXPORT_OK = qw( :ALL );
 
+my $bottles = 99;
+
 our $ua = LWP::UserAgent->new(
     requests_redirectable => [ 'GET', 'HEAD', 'POST' ],
 );
@@ -31,6 +33,7 @@ our %main_dispatch =
     say     => \&rainbow_say,
     wiki    => \&get_a_wiki_page,
     honkle  => \&roll_call,
+    beerme  => \&bottles_of_beer,
 );
 
 sub new
@@ -169,7 +172,7 @@ sub dispatch_from_sock
 {
     my ($self, $input) = @_;
 
-    print "$input\n";
+#    print "$input\n";
 
     if ( $input =~ /^PING(.*)$/i )
     {   
@@ -265,7 +268,7 @@ sub slap
 {
     my ($self, $channel, @args) = @_;
 
-    if($args[0] !~ m/[a-zA-Z0-9\-\|]/i || $args[0] eq 'nito' )
+    if($args[0] !~ m/^[a-zA-Z0-9\-\|]*$/i || $args[0] eq 'nito' )
     {
        return; 
     }
@@ -339,6 +342,23 @@ sub get_a_wiki_page
 sub sock_print
 {
 	my ($self, $channel, $message) = @_;
-    print { $self->{socket} } "PRIVMSG  $channel  :$message\r\n";
+    print { $self->{socket} } 'PRIVMSG ' . $channel . ' :' . $message . "\r\n";
+    #"PRIVMSG  $channel  :$message\r\n"; # KNOWN TO CAUSE BUGS???
 }
+
+sub bottles_of_beer
+{
+    my ($self, $channel) = @_;
+
+    if($bottles == 0)
+    {
+        $bottles = 99;
+    }
+
+    sock_print($self, $channel, "$bottles bottles of beer on the wall, $bottles bottles of beer. Take one down pass it around.");
+    $bottles--;
+    sock_print($self, $channel, "$bottles bottles of beer on the wall.");
+}
+
+
 1;
