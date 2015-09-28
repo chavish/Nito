@@ -47,7 +47,7 @@ sub add_honkler
         # Touch the file and add the user 
         open my $fh_rollcall, '>', $rollcall or print "Could not open $rollcall: $!\n";
         close $fh_rollcall;
-        %honklers = {};
+        %honklers = ();
         $honklers{$user}++;
         return report_honklers(); 
     }
@@ -83,9 +83,9 @@ sub _valid_user
 {
     my ($user) = @_;
 
-    if($user !~ m/^[a-zA-Z0-9\-\|]*$/)#|\-|\|/) # MARK FOR REMOVAL AFTER TESTING!!! 
+    if($user !~ m/^[a-zA-Z0-9\-\|]*$/)
     {
-        return undef;
+        return 0;
     }
 
     return 1;
