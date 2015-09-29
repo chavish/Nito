@@ -13,8 +13,6 @@ sub main
 {
    my ($command, $user) = @_;
 
-    print "$user\n";
-
    if(!$command || length $user >= 10)
    {
         report_honklers();
