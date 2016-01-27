@@ -10,7 +10,7 @@ main() unless caller;
 sub main
 {
     my $today = DateTime->today;
-    my $message = is_today_payday($today->day);
+    my $message = is_today_payday($today);
 
     if($message)
     {
@@ -92,10 +92,19 @@ sub find_nominal_payday
 
 sub is_today_payday
 {
-    my ($day) = @_;
+    my ($today) = @_;
 
-    if($day == 10 || $day ==25)
+    if( $today->day == 10 || $today->day == 25 )
     {
-        return "\x0313,14Today is payday!\x03";
-    }
+        if( 
+            $today->day_of_week != 1 && 
+            $today->day_of_week != 5 && 
+            $today->day_of_week != 6 
+        )
+        {
+            return "\x0313,14Today is payday!\x03";
+        }
+    }   
+
+    return 0;
 }
